@@ -11,36 +11,45 @@ def save_relation(adj_list, nodeA, nodeB):
     else:
         adj_list[nodeA] = {
             'adjacents': [nodeB],
-            'memo': []
+            'memo': {}
         }
 
 
-def bfs_with_memo(adj_list, read_time, start, prev=None):
+def bfs_with_memo(adj_list, read_time, start):
 
-    result = read_time[start - 1]
-    adjacents = adj_list[start]['adjacents']
-    neighbor_count = len(adjacents)
+    node_stack = []
+    prev_stack = []
+    cur = start
+    cur_index = 0
+    prev = None
+    sum = 0.0
 
-    while (prev and neighbor_count <= 2) or (not prev and neighbor_count == 1):
-        if prev:
-            if neighbor_count == 1:
-                return result
-            else:
-                next = adjacents[0] if adjacents[0] != prev else adjacents[1]
+    while len(node_stack) or cur_index < len(adj_list[cur]["adjacents"]):
+        adjacents = adj_list[cur]["adjacents"]
+        while (prev and len(adjacents) >= 2) or (not prev):
+            sum = 0.0
+            cur_index = 1 if adjacents[0] == prev else 0
+            node_stack.append((prev, cur, cur_index, len(adjacents), sum))
+            prev = cur
+            cur = adjacents[cur_index]
+            adjacents = adj_list[cur]["adjacents"]
         else:
-            next = adjacents[0]
-        result += read_time[next - 1]
-        adjacents = adj_list[next]['adjacents']
-        neighbor_count = len(adjacents)
-        prev = start
-        start = next
-    else:
-        prob = 1.0 / (neighbor_count - 1) if prev else 1.0 / neighbor_count
-        for adj_node in adj_list[start]['adjacents']:
-            if adj_node != prev:
-                result += prob * bfs_with_memo(adj_list, read_time, adj_node, start)
+            tmp_cur = cur
+            (prev, cur, cur_index, n_count, prev_sum) = node_stack.pop()
+            sum = prev_sum + read_time[tmp_cur - 1]
+            while cur_index == n_count - 1 or (cur_index == n_count - 2 and adj_list[cur]["adjacents"][-1] == prev):
+                if not prev:
+                    return sum / n_count + read_time[cur - 1]
+                sum = sum / (n_count - 1) + read_time[cur - 1]
+                adj_list[cur]['memo'][prev] = sum
+                (prev, cur, cur_index, n_count, prev_sum) = node_stack.pop()
+                sum += prev_sum
+            else:
+                cur_index = cur_index + 2 if adj_list[cur]["adjacents"][cur_index + 1] == prev else cur_index + 1
+                node_stack.append((prev, cur, cur_index, len(adj_list[cur]["adjacents"]), sum))
+                prev = cur
+                cur = adj_list[cur]["adjacents"][cur_index]
 
-    return result
 
 if __name__ == "__main__":
 
@@ -65,3 +74,4 @@ if __name__ == "__main__":
 
 
     print opt_start
+    print adj_list
